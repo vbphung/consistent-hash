@@ -29,7 +29,7 @@ func (n *node) ID() string {
 }
 
 func TestHasher(t *testing.T) {
-	h := NewMurmurHasher[*node](100)
+	h := NewMurmurHasher[*node](100, 100)
 
 	var (
 		nodes []*node
@@ -61,10 +61,8 @@ func TestHasher(t *testing.T) {
 func count(t *testing.T, h ConsistentHasher[*node], keys *[]string) (string, int) {
 	mp := make(map[string]int)
 	for _, k := range *keys {
-		if nds := h.Get(k); len(nds) > 0 {
-			for _, nd := range nds {
-				mp[nd.ID()]++
-			}
+		if n, ok := h.Get(k); ok {
+			mp[n.ID()]++
 		}
 	}
 

@@ -4,8 +4,8 @@ import (
 	"github.com/spaolacci/murmur3"
 )
 
-func NewMurmurHasher[N Node](replicas int) ConsistentHasher[N] {
-	return New[N](replicas, murmurHash)
+func NewMurmurHasher[N Node](maxVirNodes, maxWeight int) ConsistentHasher[N] {
+	return New[N](maxVirNodes, maxWeight, murmurHash)
 }
 
 func murmurHash(key string) uint64 {
