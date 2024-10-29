@@ -22,7 +22,6 @@ type consistentHasher[N Node] struct {
 	maxWeight   int
 	vIDs        []uint64
 	ring        map[uint64]N
-	nodes       map[string]bool
 	mu          sync.RWMutex
 }
 
@@ -32,7 +31,6 @@ func New[N Node](maxVirNodes, maxWeight int, hash HashFunc) ConsistentHasher[N] 
 		maxVirNodes: maxVirNodes,
 		maxWeight:   maxWeight,
 		ring:        make(map[uint64]N),
-		nodes:       make(map[string]bool),
 	}
 }
 
@@ -48,8 +46,6 @@ func (h *consistentHasher[N]) AddByVirtualNodes(node N, virNodes int) {
 
 	h.mu.Lock()
 	defer h.mu.Unlock()
-
-	h.nodes[nodeID] = true
 
 	for i := range virNodes {
 		vID := h.hash(nodeID + strconv.Itoa(i))
@@ -90,26 +86,32 @@ func (h *consistentHasher[N]) Remove(node N) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	if _, ok := h.nodes[nodeID]; !ok {
-		return
-	}
-
 	for i := range h.maxVirNodes {
 		vID := h.hash(nodeID + strconv.Itoa(i))
-
-		idx := sort.Search(len(h.vIDs), func(i int) bool {
-			return h.vIDs[i] >= vID
-		})
-		if idx < len(h.vIDs) && h.vIDs[idx] == vID {
-			h.vIDs = append(h.vIDs[:idx], h.vIDs[idx+1:]...)
+		if ok := h.findAndRemove(vID); !ok {
+			break
 		}
+	}
+}
 
-		delete(h.ring, vID)
+func (h *consistentHasher[N]) findAndRemove(vID uint64) bool {
+	idx := sort.Search(len(h.vIDs), func(i int) bool {
+		return h.vIDs[i] >= vID
+	})
+	if idx < 0 || idx >= len(h.vIDs) || h.vIDs[idx] != vID {
+		return false
 	}
 
-	delete(h.nodes, nodeID)
+	h.vIDs = sliceRemoveAt(h.vIDs, idx)
+	delete(h.ring, vID)
+
+	return true
 }
 
 func (h *consistentHasher[N]) zero() (n N) {
 	return
+}
+
+func sliceRemoveAt[T any](s []T, i int) []T {
+	return append(s[:i], s[i+1:]...)
 }

@@ -1,4 +1,4 @@
-module github.com/vbphung/consistenthash
+module github.com/vbphung/consistent-hash
 
 go 1.23.2
 

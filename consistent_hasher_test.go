@@ -15,7 +15,7 @@ import (
 
 const (
 	n = 32
-	m = 10000000
+	m = 1000000
 )
 
 type node struct {
